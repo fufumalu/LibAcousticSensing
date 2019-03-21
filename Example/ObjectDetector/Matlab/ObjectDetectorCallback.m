@@ -14,6 +14,9 @@ function [] = ObjectDetectorCallback( server, type, data )
     global userEnds;
     global userStartsEnd;
     global userEndsEnd;
+    global cnum;
+    global flag;
+    global number;
     
     if type == server.CALLBACK_TYPE_ERROR,
         fprintf(2, '[ERROR]: get the error callback data = %s', data);
@@ -29,11 +32,13 @@ function [] = ObjectDetectorCallback( server, type, data )
         tvgSetting.TVG_ALPHA = 0.65 % for note 4
         tvgSetting.TVG_BETA = 0;
         tvgSetting.FS = PS.FS/DOWNSAMPLE_FACTOR;
-
+        cnum = 1;
+        flag = false;
+        number = zeros(300,1);
         oriSize = PS.detectRangeEnd - PS.detectRangeStart + 1;
         dsSize = floor(oriSize/DOWNSAMPLE_FACTOR);
 
-        dsXMeters = LibSamplesToMeters(1:dsSize, 340, PS.FS/DOWNSAMPLE_FACTOR);
+        dsXMeters  = LibSamplesToMeters(1:dsSize, 340, PS.FS/DOWNSAMPLE_FACTOR);
 
         dsDetectsAll = zeros(dsSize, 20*60*10, 2);
         dsDetectsAllEnd = 0;
@@ -58,6 +63,15 @@ function [] = ObjectDetectorCallback( server, type, data )
         traceCnt = size(detects, 2);
         chCnt = size(detects, 3);
         dsDetects = zeros(dsSize, traceCnt, chCnt);
+        number(cnum) = traceCnt;
+        cnum = cnum+1;
+        if traceCnt == 2 && flag == false
+            save data.mat data;
+            flag = true;
+        end
+        if cnum == 10
+            save number.mat number;
+        end
         for chIdx = 1:chCnt
             dsDetects(:,:,chIdx) = imresize(detects(:,:,chIdx), [dsSize, traceCnt], 'Bilinear'); % subsampled results
         end
